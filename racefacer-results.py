@@ -42,76 +42,108 @@ def kartarenacheb(data):
 
     # ('session', 'in_progress', 'Session #118', '0:01:17', '77', 'min', '10', '11', 'FALSE', 'by_time', 'FALSE', 'FALSE', 'FALSE', '1722533931', '1722542279', '341033', '1', '', 'es', 'Valeriia Karpuntsova', 'Valeriia Karpuntsova', '13', '55', '29abe1', '', '11', '49,137', '49,137', '49137', '50679', '46,09', '46090', '-', '-', '-', '-', 'good', 'good', 'good', 'good', '-', '-', '0', '', '', 'FALSE', '1,72253E+12', '49,643', '49643', '3,553', '3553', '1722533931', '1,72253E+12', '0', 'in_progress')
     sql_data = []
-    # iterate over data['data']['runs'] and create a tuple for each run
-    for run in data['data']['runs']:
-        sql_data.append((
-            data['data']['type'],
-            data['data']['status_string'],
-            data['data']['event_name'],
-            data['data']['time_left'],
-            data['data']['time_left_in_seconds'],
-            data['data']['duration_type'],
-            data['data']['total_laps'],
-            data['data']['current_lap'],
-            data['data']['has_pole'],
-            data['data']['ranking_key'],
-            data['data']['has_pits'],
-            data['data']['has_stint'],
-            data['data']['is_endurance'],
-            data['data']['timestamp'],
-            data['data']['timestamp_socket'],
-            run['id'],
-            run['pos'],
-            run['pole'],
-            run['country_code'],
-            run['name'],
-            run['team'],
-            run['kart'],
-            run['kart_id'],
-            run['kart_color'],
-            run['current_lap'],
-            run['total_laps'],
-            run['last_time'],
-            run['last_time_short'],
-            run['last_time_raw'],
-            run['prev_time_raw'],
-            run['best_time'],
-            run['best_time_raw'],
-            run['s1'],
-            run['s2'],
-            run['s3'],
-            run['s4'],
-            run['s1_status'],
-            run['s2_status'],
-            run['s3_status'],
-            run['s4_status'],
-            run['gap'],
-            run['int'],
-            run['number_of_pits'],
-            run['total_driver_changes'],
-            run['current_pit_time'],
-            run['in_pit'],
-            run['last_passing'],
-            run['avg_lap'],
-            run['avg_lap_raw'],
-            run['consistency_lap'],
-            run['consistency_lap_raw'],
-            run['current_lap_start_timestamp'],
-            run['current_lap_start_microtimestamp'],
-            run['current_lap_milliseconds'],
-            run['run_status'],
-        ))
+    # is there 'runs' key under data
+    if 'runs' in data['data']:
+        # iterate over data['data']['runs'] and create a tuple for each run
+        for run in data['data']['runs']:
+            sql_data.append((
+                run['team'],
+                run['last_passing']
+            ))
+    # if sql_data has at least one element, insert into db
+    if len(sql_data) > 0:
+        logging.info(f"DB insert start, data size: {len(sql_data)}")
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+        insert_query = """
+            MERGE racefacer.dbo.racefacer_runs AS target
+            USING (VALUES (?, ?)) AS source (team, last_passing)
+            ON target.team = source.team
+            WHEN MATCHED THEN 
+                UPDATE SET last_passing = source.last_passing
+            WHEN NOT MATCHED THEN
+                INSERT (team, last_passing) 
+                VALUES (source.team, source.last_passing);
+        """
+        cursor.executemany(insert_query, sql_data)
+        conn.commit()
+        conn.close()
 
-    logging.info(f"DB insert start, data size: {len(sql_data)}")
-    conn = pyodbc.connect(conn_str)
-    cursor = conn.cursor()
-    insert_query = """
-        INSERT INTO racefacer.dbo.racefacer_results (inserted, [type], status_string, event_name, time_left, time_left_in_seconds, duration_type, total_laps_race, current_lap_race, has_pole, ranking_key, has_pits, has_stint, is_endurance, [timestamp], timestamp_socket, id, pos, pole, country_code, name, team, kart, kart_id, kart_color, current_lap, total_laps, last_time, last_time_short, last_time_raw, prev_time_raw, best_time, best_time_raw, s1, s2, s3, s4, s1_status, s2_status, s3_status, s4_status, gap, [int], number_of_pits, total_driver_changes, current_pit_time, in_pit, last_passing, avg_lap, avg_lap_raw, consistency_lap, consistency_lap_raw, current_lap_start_timestamp, current_lap_start_microtimestamp, current_lap_milliseconds, run_status)
-        VALUES(sysdatetime(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """
-    cursor.executemany(insert_query, sql_data)
-    conn.commit()
-    conn.close()
+    sql_data = []
+    # is there 'runs' key under data
+    if 'runs' in data['data']:
+        # iterate over data['data']['runs'] and create a tuple for each run
+        for run in data['data']['runs']:
+            sql_data.append((
+                data['data']['type'],
+                data['data']['status_string'],
+                data['data']['event_name'],
+                data['data']['time_left'],
+                data['data']['time_left_in_seconds'],
+                data['data']['duration_type'],
+                data['data']['total_laps'],
+                data['data']['current_lap'],
+                data['data']['has_pole'],
+                data['data']['ranking_key'],
+                data['data']['has_pits'],
+                data['data']['has_stint'],
+                data['data']['is_endurance'],
+                data['data']['timestamp'],
+                data['data']['timestamp_socket'],
+                run['id'],
+                run['pos'],
+                run['pole'],
+                run['country_code'],
+                run['name'],
+                run['team'],
+                run['kart'],
+                run['kart_id'],
+                run['kart_color'],
+                run['current_lap'],
+                run['total_laps'],
+                run['last_time'],
+                run['last_time_short'],
+                run['last_time_raw'],
+                run['prev_time_raw'],
+                run['best_time'],
+                run['best_time_raw'],
+                run['s1'],
+                run['s2'],
+                run['s3'],
+                run['s4'],
+                run['s1_status'],
+                run['s2_status'],
+                run['s3_status'],
+                run['s4_status'],
+                run['gap'],
+                run['int'],
+                run['number_of_pits'],
+                run['total_driver_changes'],
+                run['current_pit_time'],
+                run['in_pit'],
+                run['last_passing'],
+                run['avg_lap'],
+                run['avg_lap_raw'],
+                run['consistency_lap'],
+                run['consistency_lap_raw'],
+                run['current_lap_start_timestamp'],
+                run['current_lap_start_microtimestamp'],
+                run['current_lap_milliseconds'],
+                run['run_status'],
+            ))
+
+    # if sql_data has at least one element, insert into db
+    if len(sql_data) > 0:
+        logging.info(f"DB insert start, data size: {len(sql_data)}")
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+        insert_query = """
+            INSERT INTO racefacer.dbo.racefacer_results (inserted, [type], status_string, event_name, time_left, time_left_in_seconds, duration_type, total_laps_race, current_lap_race, has_pole, ranking_key, has_pits, has_stint, is_endurance, [timestamp], timestamp_socket, id, pos, pole, country_code, name, team, kart, kart_id, kart_color, current_lap, total_laps, last_time, last_time_short, last_time_raw, prev_time_raw, best_time, best_time_raw, s1, s2, s3, s4, s1_status, s2_status, s3_status, s4_status, gap, [int], number_of_pits, total_driver_changes, current_pit_time, in_pit, last_passing, avg_lap, avg_lap_raw, consistency_lap, consistency_lap_raw, current_lap_start_timestamp, current_lap_start_microtimestamp, current_lap_milliseconds, run_status)
+            VALUES(sysdatetime(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        cursor.executemany(insert_query, sql_data)
+        conn.commit()
+        conn.close()
 
 @sio.on('*')
 def any_event(event, sid, data):
