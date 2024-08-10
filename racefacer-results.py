@@ -76,7 +76,7 @@ def kartarenacheb(data):
         for run in data['data']['runs']:
             sql_data.append((
                 data['data']['type'],
-                data['data']['status_string'],
+                '',
                 data['data']['event_name'],
                 data['data']['time_left'],
                 data['data']['time_left_in_seconds'],
