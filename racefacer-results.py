@@ -47,8 +47,12 @@ def kartarenacheb(data):
         # iterate over data['data']['runs'] and create a tuple for each run
         for run in data['data']['runs']:
             sql_data.append((
-                run['team'],
-                run['last_passing']
+                run.get('team', ''),
+                run.get('last_passing', ''),
+                run.get('number_of_pits', 0),
+                run.get('total_laps', 0),
+                run.get('current_line_width', -1),
+                run.get('total_line_duration', -1)
             ))
     # if sql_data has at least one element, insert into db
     if len(sql_data) > 0:
@@ -57,13 +61,13 @@ def kartarenacheb(data):
         cursor = conn.cursor()
         insert_query = """
             MERGE racefacer.dbo.racefacer_runs AS target
-            USING (VALUES (?, ?)) AS source (team, last_passing)
+            USING (VALUES (?, ?, ?, ?, ?, ?)) AS source (team, last_passing, pits, laps, current_line_width, total_line_duration)
             ON target.team = source.team
             WHEN MATCHED THEN 
-                UPDATE SET last_passing = source.last_passing
+                UPDATE SET last_passing = source.last_passing, pits = source.pits, laps = source.laps, current_line_width = source.current_line_width, total_line_duration = source.total_line_duration
             WHEN NOT MATCHED THEN
-                INSERT (team, last_passing) 
-                VALUES (source.team, source.last_passing);
+                INSERT (team, last_passing, pits, laps, current_line_width, total_line_duration) 
+                VALUES (source.team, source.last_passing, source.pits, source.laps, source.current_line_width, source.total_line_duration);
         """
         cursor.executemany(insert_query, sql_data)
         conn.commit()
@@ -122,14 +126,14 @@ def kartarenacheb(data):
                 run['current_pit_time'],
                 run['in_pit'],
                 run['last_passing'],
-                run['avg_lap'],
-                run['avg_lap_raw'],
-                run['consistency_lap'],
-                run['consistency_lap_raw'],
+                "",
+                "",
+                '',
+                '',
                 run['current_lap_start_timestamp'],
-                run['current_lap_start_microtimestamp'],
+                '',
                 run['current_lap_milliseconds'],
-                run['run_status'],
+                '',
             ))
 
     # if sql_data has at least one element, insert into db
